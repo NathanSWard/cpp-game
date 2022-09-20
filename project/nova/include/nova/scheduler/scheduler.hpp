@@ -169,8 +169,7 @@ struct Scheduler {
   }
 
   template <concepts::into_label_ref TStageLabel, typename TSystem>
-  auto add_system_to_stage(TSystem&& system, TStageLabel&& label = {})
-      -> void {
+  auto add_system_to_stage(TSystem&& system, TStageLabel&& label = {}) -> void {
     const auto label_ref = to_label_ref(FWD(label));
     if (const auto stage = std::ranges::find(
             std::as_const(stages.meta), label_ref,

@@ -30,8 +30,8 @@ namespace concepts {
 
 template <typename T>
 concept from_world = requires(World& world) {
-                       { nova::from_world<T>{}(world) } -> std::same_as<T>;
-                     };
+  { nova::from_world<T>{}(world) } -> std::same_as<T>;
+};
 
 }  // namespace concepts
 

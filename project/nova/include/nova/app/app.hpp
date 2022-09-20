@@ -92,7 +92,6 @@ struct App {
     add_stage(nova::stage<stages::Update>().after<stages::PreUpdate>());
     add_stage(nova::stage<stages::PostUpdate>().after<stages::Update>());
 
-    
     return *this;
   }
 };

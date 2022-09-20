@@ -22,10 +22,8 @@ namespace concepts {
 
 template <typename T>
 concept into_stage = requires(T&& t) {
-                       {
-                         nova::into_stage<T>{}(FWD(t))
-                         } -> std::same_as<StageMeta>;
-                     };
+  { nova::into_stage<T>{}(FWD(t)) } -> std::same_as<StageMeta>;
+};
 
 }  // namespace concepts
 
@@ -70,7 +68,7 @@ struct into_stage<stage_builder> {
 };
 
 template <typename T>
-  requires concepts::into_label<T>
+requires concepts::into_label<T>
 struct into_stage<T> {
   constexpr auto operator()(auto&& label) -> StageMeta {
     static_assert(std::is_same_v<T, std::remove_cvref_t<decltype(label)>>);

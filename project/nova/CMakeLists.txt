@@ -65,6 +65,7 @@ if(BUILD_TESTING)
     scheduler_test
     graph_test
     app_test
+    bitset_test
   )
   foreach(TEST_CASE ${TEST_CASES})
     add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/test/${TEST_CASE}.cpp)

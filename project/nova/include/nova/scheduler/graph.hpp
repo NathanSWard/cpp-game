@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <nova/system/system_data.hpp>
+#include <nova/util/bitset.hpp>
 #include <nova/util/common.hpp>
 #include <nova/util/hash.hpp>
+#include <nova/util/ranges.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/enumerate.hpp>
@@ -26,10 +28,9 @@ namespace concepts {
 
 template <typename T>
 concept node = requires(T t) {
-                 { t.labels };
-
-                 { t.ordering };
-               };
+  {t.labels};
+  {t.ordering};
+};
 }  // namespace concepts
 
 using graph_t =
@@ -37,31 +38,25 @@ using graph_t =
                      hash::hash_map_t<std::size_t, hash::hash_set_t<Label>>>;
 
 template <std::ranges::sized_range TNodes>
-  requires(concepts::node<std::ranges::range_value_t<TNodes>>)
-auto build_dependency_graph(TNodes const& nodes) -> graph_t {
+requires(concepts::node<std::ranges::range_value_t<
+             TNodes>>) auto build_dependency_graph(TNodes const& nodes)
+    -> graph_t {
   namespace views = ranges::views;
 
-  using bitset_t = std::basic_string<bool>;
-  auto labels = hash::hash_map_t<Label, bitset_t>{};
+  auto labels = hash::hash_map_t<Label, FixedBitset>{};
   for (const auto& [index, label] :
-       nodes | views::enumerate | views::transform([&](const auto pair) {
+       nodes | views::enumerate | nova::join_transform([&](const auto& pair) {
          const auto& [index, node] = pair;
          return views::zip(views::generate([=] { return index; }), node.labels);
-       }) | views::join) {
+       })) {
     if (const auto iter = labels.find(label); iter == std::end(labels)) {
       const auto [emplaced, _] =
-          labels.try_emplace(label, bitset_t(std::size(nodes), false));
-      emplaced->second[index] = true;
+          labels.try_emplace(label, FixedBitset(std::size(nodes)));
+      emplaced->second.insert(index);
     } else {
-      iter->second[index] = true;
+      iter->second.insert(index);
     }
   }
-
-  constexpr auto ones = [](const auto& bitset) {
-    return bitset | views::enumerate |
-           views::filter([](const auto& pair) { return std::get<1>(pair); }) |
-           std::ranges::views::elements<0>;
-  };
 
   auto graph = reserved<graph_t>(std::size(nodes));
   for (const auto& [index, node] : nodes | views::enumerate) {
@@ -69,7 +64,7 @@ auto build_dependency_graph(TNodes const& nodes) -> graph_t {
     for (const auto& label : node.ordering.after) {
       if (const auto iter = labels.find(label); iter != std::end(labels)) {
         const auto& new_dependency = iter->second;
-        for (const auto& dependency : ones(new_dependency)) {
+        for (const auto& dependency : new_dependency.ones()) {
           dependencies[dependency].insert(label);
         }
       } else {
@@ -82,7 +77,7 @@ auto build_dependency_graph(TNodes const& nodes) -> graph_t {
     for (const auto& label : node.ordering.before) {
       if (const auto iter = labels.find(label); iter != std::end(labels)) {
         const auto& dependants = iter->second;
-        for (const auto& dependant : ones(dependants)) {
+        for (const auto& dependant : dependants.ones()) {
           graph[dependant][index].insert(label);
         }
       } else {

@@ -35,8 +35,8 @@ class Time {
   [[nodiscard]] constexpr auto delta() const -> duration_t { return delta_; }
 
   template <typename T = double>
-    requires(std::convertible_to<typename duration_t::rep, T>)
-  [[nodiscard]] constexpr auto delta_seconds() const -> T {
+  requires(std::convertible_to<typename duration_t::rep, T>)
+      [[nodiscard]] constexpr auto delta_seconds() const -> T {
     return static_cast<T>(delta_.count());
   }
 

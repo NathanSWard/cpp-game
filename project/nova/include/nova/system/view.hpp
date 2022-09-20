@@ -33,8 +33,9 @@ struct View<With<TWith...>, Without<TWithout...>>
   using base_t = detail::entt_view_t<With<TWith...>, Without<TWithout...>>;
 
   template <typename T>
-    requires(not std::is_same_v<std::remove_cvref_t<T>, View>)
-  explicit(true) constexpr View(T&& repr) noexcept : base_t(FWD(repr)) {}
+  requires(not std::is_same_v<std::remove_cvref_t<T>, View>) explicit(
+      true) constexpr View(T&& repr) noexcept
+      : base_t(FWD(repr)) {}
 };
 
 }  // namespace nova

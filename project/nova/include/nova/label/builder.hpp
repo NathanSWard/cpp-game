@@ -1,7 +1,8 @@
 #pragma once
 
-#include "label.hpp"
 #include <nova/system/system_data.hpp>
+
+#include "label.hpp"
 
 namespace nova {
 
@@ -12,7 +13,7 @@ struct builder_base {
   Ordering ordering_{};
 
  public:
-     // lvalue-ref overloads
+  // lvalue-ref overloads
   template <concepts::into_label TLabel>
   constexpr auto before(TLabel&& label = {}) & -> auto& {
     this->ordering_.before.push_back(nova::to_label(FWD(label)));

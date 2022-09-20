@@ -30,6 +30,13 @@ struct panic_exception : std::exception {
     throw panic_exception{MOV(panic_message)};                               \
   }()
 
+#define NOVA_ASSERT(x, fmt, ...)                 \
+  [&] {                                          \
+    if (not static_cast<bool>(x)) [[unlikely]] { \
+      PANIC(fmt, __VA_ARGS__);                   \
+    }                                            \
+  }
+
 #ifndef NDEBUG
 #define IS_DEBUG
 #endif

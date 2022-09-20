@@ -45,15 +45,13 @@ struct into_label_ref;
 namespace concepts {
 template <typename T>
 concept into_label = requires(T&& t) {
-                       { nova::into_label<T>{}(FWD(t)) } -> std::same_as<Label>;
-                     };
+  { nova::into_label<T>{}(FWD(t)) } -> std::same_as<Label>;
+};
 
 template <typename T>
 concept into_label_ref = requires(T&& t) {
-                           {
-                             nova::into_label_ref<T>{}(FWD(t))
-                             } -> std::same_as<LabelRef>;
-                         };
+  { nova::into_label_ref<T>{}(FWD(t)) } -> std::same_as<LabelRef>;
+};
 }  // namespace concepts
 
 template <concepts::into_label_ref TLhs, concepts::into_label_ref TRhs>
@@ -101,7 +99,7 @@ struct into_label_ref<T> {
 };
 
 template <typename T>
-  requires std::is_empty_v<T>
+requires std::is_empty_v<T>
 struct into_label_ref<T> {
   constexpr auto operator()(T) const noexcept -> LabelRef {
     constexpr auto name = type_name<T>();
@@ -113,7 +111,7 @@ struct into_label_ref<T> {
 };
 
 template <typename T>
-  requires std::constructible_from<std::string, T>
+requires std::constructible_from<std::string, T>
 struct into_label<T> {
   constexpr auto operator()(auto&& value) const noexcept -> Label {
     static_assert(std::is_same_v<T, std::remove_cvref_t<decltype(value)>>);
@@ -126,8 +124,7 @@ struct into_label<T> {
 };
 
 template <typename T>
-  requires(std::is_empty_v<T>)
-struct into_label<T> {
+requires(std::is_empty_v<T>) struct into_label<T> {
   constexpr auto operator()(T) const noexcept -> Label {
     constexpr auto name = type_name<T>();
     return Label{

@@ -15,10 +15,9 @@
 namespace nova {
 
 template <typename TContainer>
-  requires(requires(TContainer& container) {
-             container.reserve(std::size_t{});
-           })
-[[nodiscard]] constexpr auto reserved(const std::size_t size) -> TContainer {
+requires(requires(TContainer& container) { container.reserve(std::size_t{}); })
+    [[nodiscard]] constexpr auto reserved(const std::size_t size)
+        -> TContainer {
   auto container = TContainer{};
   container.reserve(size);
   return container;

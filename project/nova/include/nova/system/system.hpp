@@ -34,32 +34,29 @@ struct system_param;
 namespace concepts {
 template <typename TParam>
 concept system_param_access = requires {
-                                {
-                                  nova::system_param<TParam>::access()
-                                  } -> std::same_as<Access>;
-                              };
+  { nova::system_param<TParam>::access() } -> std::same_as<Access>;
+};
 
 template <typename TParam>
-concept system_param_without_state =
-    requires(SystemMeta const& meta, World& world) {
-      {
-        nova::system_param<TParam>::param(meta, world)
-        } -> std::same_as<TParam>;
-    } and system_param_access<TParam>;
+concept system_param_without_state = requires(SystemMeta const& meta,
+                                              World& world) {
+  { nova::system_param<TParam>::param(meta, world) } -> std::same_as<TParam>;
+}
+and system_param_access<TParam>;
 
 template <typename TParam>
 concept system_param_with_state =
     requires(typename nova::system_param<TParam>::state_t& state,
              SystemMeta const& meta, World& world) {
-      {
-        nova::system_param<TParam>::param(state, meta, world)
-        } -> std::same_as<TParam>;
+  {
+    nova::system_param<TParam>::param(state, meta, world)
+    } -> std::same_as<TParam>;
 
-      {
-        nova::system_param<TParam>::init(meta, world)
-        } -> std::same_as<typename nova::system_param<TParam>::state_t>;
-    } and
-    system_param_access<TParam>;
+  {
+    nova::system_param<TParam>::init(meta, world)
+    } -> std::same_as<typename nova::system_param<TParam>::state_t>;
+}
+and system_param_access<TParam>;
 
 template <typename TParam>
 concept system_param =
@@ -178,9 +175,8 @@ struct system_param<View<With<TWith...>, Without<TWithout...>>> {
 };
 
 template <typename TWorld>
-  requires(std::is_same_v<std::remove_cvref_t<TWorld>, World> and
-           std::is_lvalue_reference_v<TWorld>)
-struct system_param<TWorld> {
+requires(std::is_same_v<std::remove_cvref_t<TWorld>, World>and
+             std::is_lvalue_reference_v<TWorld>) struct system_param<TWorld> {
   static constexpr auto param(SystemMeta const&, World& world) -> TWorld {
     return world;
   }
@@ -200,9 +196,9 @@ struct system_param<TWorld> {
 };
 
 template <typename TResources>
-  requires(std::is_same_v<std::remove_cvref_t<TResources>, Resources> and
-           std::is_lvalue_reference_v<TResources>)
-struct system_param<TResources> {
+requires(std::is_same_v<std::remove_cvref_t<TResources>, Resources>and
+             std::is_lvalue_reference_v<
+                 TResources>) struct system_param<TResources> {
   static constexpr auto param(SystemMeta const&, World& world) -> TResources {
     return world.resources();
   }
@@ -221,9 +217,9 @@ struct system_param<TResources> {
 };
 
 template <typename TRegistry>
-  requires(std::is_same_v<std::remove_cvref_t<TRegistry>, Registry> and
-           std::is_lvalue_reference_v<TRegistry>)
-struct system_param<TRegistry> {
+requires(
+    std::is_same_v<std::remove_cvref_t<TRegistry>, Registry>and
+        std::is_lvalue_reference_v<TRegistry>) struct system_param<TRegistry> {
   static constexpr auto param(SystemMeta const&, World& world) -> TRegistry {
     return world.registry();
   }
@@ -246,11 +242,12 @@ template <typename TSystemParam>
 struct system_param_impl;
 
 template <typename TSystemParam>
-  requires nova::concepts::system_param_with_state<TSystemParam>
-struct system_param_impl<TSystemParam> : nova::system_param<TSystemParam> {};
+requires nova::concepts::system_param_with_state<TSystemParam>
+struct system_param_impl<TSystemParam> : nova::system_param<TSystemParam> {
+};
 
 template <typename TSystemParam>
-  requires nova::concepts::system_param_without_state<TSystemParam>
+requires nova::concepts::system_param_without_state<TSystemParam>
 struct system_param_impl<TSystemParam> : nova::system_param<TSystemParam> {
   struct state_t {};
 
@@ -273,8 +270,7 @@ struct function_wrapper {
 };
 
 template <typename T>
-  requires(std::is_function_v<T>)
-struct function_wrapper<T> {
+requires(std::is_function_v<T>) struct function_wrapper<T> {
   template <class TFunc>
   constexpr explicit(true) function_wrapper(std::in_place_t, TFunc& func)
       : func(std::addressof(func)) {}
@@ -388,8 +384,8 @@ namespace concepts {
 
 template <typename T>
 concept system_like = requires(T&& t) {
-                        { detail::create_system(FWD(t)) };
-                      };
+  {detail::create_system(FWD(t))};
+};
 
 }  // namespace concepts
 
@@ -403,9 +399,9 @@ struct SystemDescriptor {
 template <concepts::system_like TSystem>
 struct into_system_descriptors<TSystem> {
   template <typename T>
-    requires(std::is_same_v<std::remove_cvref_t<T>,
-                            std::remove_cvref_t<TSystem>>)
-  auto operator()(T&& system) -> SystemDescriptor {
+  requires(
+      std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<TSystem>>) auto
+  operator()(T&& system) -> SystemDescriptor {
     return SystemDescriptor{
         .system = detail::create_system(FWD(system)),
         .labels = {},
@@ -418,12 +414,10 @@ struct into_system_descriptors<TSystem> {
 namespace concepts {
 
 template <typename T>
-concept into_system_descriptors =
-    requires(T&& t) {
-      {
-        ::nova::into_system_descriptors<std::remove_cvref_t<T>>{}(FWD(t))
-      };  // TODO: improve this constraint
-    };
+concept into_system_descriptors = requires(T&& t) {
+  {::nova::into_system_descriptors<std::remove_cvref_t<T>>{}(
+      FWD(t))};  // TODO: improve this constraint
+};
 
 }  // namespace concepts
 
