@@ -6,7 +6,6 @@
 #include "nova/util/bitset.hpp"
 
 #include <algorithm>
-#include <iostream>
 
 TEST_CASE("bitset") {
   auto bitset = nova::FixedBitset(10);

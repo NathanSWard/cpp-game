@@ -35,7 +35,7 @@ struct panic_exception : std::exception {
     if (not static_cast<bool>(x)) [[unlikely]] { \
       PANIC(fmt, __VA_ARGS__);                   \
     }                                            \
-  }
+  }()
 
 #ifndef NDEBUG
 #define IS_DEBUG
@@ -43,12 +43,7 @@ struct panic_exception : std::exception {
 
 // DEBUG_ASSERT
 #ifdef IS_DEBUG
-#define DEBUG_ASSERT(x, fmt, ...)                \
-  [&] {                                          \
-    if (not static_cast<bool>(x)) [[unlikely]] { \
-      PANIC(fmt, __VA_ARGS__);                   \
-    }                                            \
-  }()
+#define DEBUG_ASSERT(x, fmt, ...) NOVA_ASSERT(x, fmt, __VA_ARGS__)
 #else
 #define DEBUG_ASSERT(...)
 #endif
