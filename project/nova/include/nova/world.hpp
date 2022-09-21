@@ -3,11 +3,10 @@
 #include <entt/entt.hpp>
 #include <tl/optional.hpp>
 
+#include "registry.hpp"
 #include "resource/resource.hpp"
 
 namespace nova {
-
-using Registry = entt::registry;
 
 class World {
   Resources resources_;

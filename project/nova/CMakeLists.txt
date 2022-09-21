@@ -50,12 +50,13 @@ target_link_options(${TARGET_NAME} PRIVATE ${linker_flags})
 target_include_directories(${TARGET_NAME}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
+    ${Boost_INCLUDE_DIRS}
   PRIVATE 
     ${TARGET_INCLUDE_FOLDER}
     # Any other extra include required
 )
 
-target_link_libraries(${TARGET_NAME} PUBLIC EnTT::EnTT tl::optional tl::expected range-v3::range-v3)
+target_link_libraries(${TARGET_NAME} PUBLIC EnTT::EnTT tl::optional tl::expected range-v3::range-v3 Boost::headers)
 
 if(BUILD_TESTING)
   list(APPEND TEST_CASES
@@ -66,6 +67,8 @@ if(BUILD_TESTING)
     graph_test
     app_test
     bitset_test
+    reflection_test
+    registry_test
   )
   foreach(TEST_CASE ${TEST_CASES})
     add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/test/${TEST_CASE}.cpp)
