@@ -40,7 +40,7 @@ struct App {
           sizeof...(args) == 0,
           "A resource that specializes `nova::from_world<>` cannot be "
           "inserted with arguments. Try `app.insert_resource<R>()` instead");
-      world.resources().set<TResource>(from_world<R>{}(world));
+      world.resources().set<TResource>(from_world<TResource>{}(world));
     } else {
       world.resources().set<TResource>(FWD(args)...);
     }

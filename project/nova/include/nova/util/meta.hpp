@@ -18,7 +18,7 @@ namespace detail {
 
 template <typename R, typename... Args>
 struct function_traits_defs {
-  static constexpr std::size_t arg_count = sizeof...(Args);
+  static constexpr auto arity = sizeof...(Args);
   using result_t = R;
   using args_t = args<Args...>;
 
@@ -33,8 +33,10 @@ struct function_traits_defs {
   using arg_t = typename arg<I>::type;
 };
 
+struct not_a_function {};
+
 template <typename T>
-struct function_traits_impl;
+struct function_traits_impl : not_a_function {};
 
 template <typename ReturnType, typename... Args>
 struct function_traits_impl<ReturnType(Args...)>
@@ -46,6 +48,14 @@ struct function_traits_impl<ReturnType (*)(Args...)>
 
 template <typename ReturnType, typename... Args>
 struct function_traits_impl<ReturnType (*)(Args...) noexcept>
+    : function_traits_defs<ReturnType, Args...> {};
+
+template <typename ReturnType, typename... Args>
+struct function_traits_impl<ReturnType (&)(Args...)>
+    : function_traits_defs<ReturnType, Args...> {};
+
+template <typename ReturnType, typename... Args>
+struct function_traits_impl<ReturnType (&)(Args...) noexcept>
     : function_traits_defs<ReturnType, Args...> {};
 
 template <typename ClassType, typename ReturnType, typename... Args>
@@ -71,11 +81,18 @@ template <typename T>
 struct function_traits : detail::function_traits_impl<T> {};
 
 template <typename T>
-requires(requires { &T::operator(); }) struct function_traits<T>
-    : detail::function_traits_impl<decltype(&T::operator())> {
+requires(requires {
+  &std::remove_reference_t<T>::operator();
+}) struct function_traits<T>
+    : detail::function_traits_impl<
+          decltype(&std::remove_reference_t<T>::operator())> {
 };
 
 template <typename T>
 using args_t = typename function_traits<T>::args_t;
+
+template <typename T>
+concept any_callable =
+    not std::is_base_of_v<detail::not_a_function, function_traits<T>>;
 
 }  // namespace nova

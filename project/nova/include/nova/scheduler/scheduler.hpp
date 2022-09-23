@@ -157,8 +157,7 @@ struct Scheduler {
       });
     };
 
-    auto descriptors =
-        into_system_descriptors<std::remove_cvref_t<TSystem>>{}(FWD(system));
+    auto descriptors = to_descriptors(FWD(system));
     if constexpr (std::ranges::range<decltype(descriptors)>) {
       for (auto&& descriptor : descriptors) {
         add_descriptor(MOV(descriptor));
@@ -237,8 +236,8 @@ struct Scheduler {
     };
 
     const auto get_system_name = [](const auto& systems) {
-      return [&](const auto index) -> const auto& {
-        return systems[index].meta.name;
+      return [&](const auto index) -> std::string_view {
+        return systems[index].meta.id.name();
       };
     };
 

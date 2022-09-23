@@ -314,7 +314,7 @@ auto type_erased_runc_func_impl(SystemMeta const& meta, void* const data,
   [&]<auto... Is, typename... TSystemParam>(std::index_sequence<Is...>,
                                             type_list<TSystemParam...>) {
     DEBUG_ASSERT(system_data->state.has_value(),
-                 "system `{}` is not initialized!", meta.name);
+                 "system `{}` is not initialized!", meta.id.name());
 
     std::invoke(
         system_data->system.func,
@@ -345,7 +345,7 @@ auto type_erased_initialize_func_impl(SystemMeta const& meta, void* const data,
                                             type_list<TSystemParam...>) {
     DEBUG_ASSERT(not system_data->state.has_value(),
                  "system `{}`'s state is being initialize more than once!",
-                 meta.name);
+                 meta.id.name());
 
     system_data->state.emplace(TSystemParam::init(meta, world)...);
   }
@@ -373,8 +373,7 @@ auto create_system(TSystem&& system) -> System {
           tl::nullopt,
           detail::function_wrapper<system_t>{std::in_place, FWD(system)}),
       .meta = SystemMeta{
-          .id = SystemId::create<system_t>(),
-          .name = type_name<std::remove_cvref_t<TSystem>>(),
+          .id = type_id<system_t>(),
       }};
 }
 
@@ -383,11 +382,23 @@ auto create_system(TSystem&& system) -> System {
 namespace concepts {
 
 template <typename T>
-concept system_like = requires(T&& t) {
-  {detail::create_system(FWD(t))};
-};
+concept system = any_callable<T>;
 
 }  // namespace concepts
+
+template <concepts::system TSystem>
+struct into_label<TSystem> {
+  template <typename T>
+  constexpr auto operator()(T&& system) const noexcept -> Label {
+    static_assert(
+        std::is_same_v<TSystem, std::remove_cvref_t<decltype(system)>>);
+    constexpr auto name = type_name<TSystem>();
+    return Label{
+        .id = entt::hashed_string{std::data(name), std::size(name)},
+        .name = std::string{name},
+    };
+  }
+};
 
 struct SystemDescriptor {
   System system;
@@ -396,34 +407,20 @@ struct SystemDescriptor {
   Ordering ordering{};
 };
 
-template <concepts::system_like TSystem>
+template <concepts::system TSystem>
 struct into_system_descriptors<TSystem> {
   template <typename T>
-  requires(
-      std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<TSystem>>) auto
-  operator()(T&& system) -> SystemDescriptor {
+  auto operator()(T&& system) -> SystemDescriptor {
+    static_assert(std::is_same_v<std::remove_cvref_t<T>, TSystem>);
+    auto labels = Labels{};
+    labels.push_back(to_label(system));
     return SystemDescriptor{
         .system = detail::create_system(FWD(system)),
-        .labels = {},
+        .labels = MOV(labels),
         .access = detail::get_system_access<TSystem>(),
         .ordering = {},
     };
   }
 };
-
-namespace concepts {
-
-template <typename T>
-concept into_system_descriptors = requires(T&& t) {
-  {::nova::into_system_descriptors<std::remove_cvref_t<T>>{}(
-      FWD(t))};  // TODO: improve this constraint
-};
-
-}  // namespace concepts
-
-template <concepts::into_system_descriptors T>
-constexpr auto into_descriptor(T&& system) -> SystemDescriptor {
-  return into_system_descriptors<std::remove_cvref_t<T>>{}(FWD(system));
-}
 
 }  // namespace nova

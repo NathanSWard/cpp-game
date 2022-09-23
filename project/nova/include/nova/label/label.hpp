@@ -3,6 +3,7 @@
 #include <concepts>
 #include <entt/entt.hpp>
 #include <nova/util/common.hpp>
+#include <nova/util/meta.hpp>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -10,10 +11,10 @@
 
 namespace nova {
 
-using label_id_t = entt::id_type;
+using LabelId = entt::id_type;
 
 struct LabelRef {
-  label_id_t id;
+  LabelId id;
   std::string_view name;
 
   constexpr auto operator==(const LabelRef&) const noexcept -> bool = default;
@@ -21,7 +22,7 @@ struct LabelRef {
 };
 
 struct Label {
-  label_id_t id{};
+  LabelId id{};
   std::string name{};
 
   constexpr explicit(false) operator LabelRef() const noexcept {
@@ -45,12 +46,14 @@ struct into_label_ref;
 namespace concepts {
 template <typename T>
 concept into_label = requires(T&& t) {
-  { nova::into_label<T>{}(FWD(t)) } -> std::same_as<Label>;
+  { nova::into_label<std::remove_cvref_t<T>>{}(FWD(t)) } -> std::same_as<Label>;
 };
 
 template <typename T>
 concept into_label_ref = requires(T&& t) {
-  { nova::into_label_ref<T>{}(FWD(t)) } -> std::same_as<LabelRef>;
+  {
+    nova::into_label_ref<std::remove_cvref_t<T>>{}(FWD(t))
+    } -> std::same_as<LabelRef>;
 };
 }  // namespace concepts
 
@@ -124,7 +127,7 @@ struct into_label<T> {
 };
 
 template <typename T>
-requires(std::is_empty_v<T>) struct into_label<T> {
+requires(std::is_empty_v<T> and not any_callable<T>) struct into_label<T> {
   constexpr auto operator()(T) const noexcept -> Label {
     constexpr auto name = type_name<T>();
     return Label{

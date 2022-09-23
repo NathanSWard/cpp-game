@@ -13,27 +13,12 @@
 
 namespace nova {
 
-struct SystemId {
-  TypeId id{};
-
-  template <typename T>
-  constexpr static auto create() noexcept -> SystemId {
-    return SystemId{type_id<std::remove_cvref_t<T>>()};
-  }
-
-  constexpr auto operator==(SystemId const &rhs) const noexcept -> bool {
-    return id == rhs.id;
-  }
-  constexpr auto operator<=>(SystemId const &) const = default;
-};
-
 struct SystemMeta {
-  SystemId id;
-  std::string_view name{};
+  TypeId id;
 };
 
 struct System {
-  using func_t = void (*)(SystemMeta const &, void *, void *);
+  using func_t = auto(*)(SystemMeta const &, void *, void *) -> void;
 
   func_t run_func;
   func_t initialize_func;
@@ -47,6 +32,16 @@ struct System {
   constexpr auto initialize(void *world_ptr) -> void {
     initialize_func(meta, data.data(), world_ptr);
   }
+};
+
+template <>
+struct into_label<System> {
+  constexpr auto operator()(const System &system) -> Label {
+    return Label{
+        .id = system.meta.id.id(),
+        .name = std::string{system.meta.id.name()},
+    };
+  };
 };
 
 struct Ordering {
@@ -95,14 +90,21 @@ struct Access {
 template <typename>
 struct into_system_descriptors;
 
-}  // namespace nova
+namespace concepts {
 
-template <>
-struct std::hash<nova::SystemId> {
-  auto operator()(nova::SystemId const &id) const noexcept -> std::size_t {
-    return std::hash<nova::TypeId>{}(id.id);
-  }
+template <typename T>
+concept into_system_descriptors = requires(T &&t) {
+  {nova::into_system_descriptors<std::remove_cvref_t<T>>{}(FWD(t))};
 };
+
+}  // namespace concepts
+
+template <concepts::into_system_descriptors T>
+constexpr auto to_descriptors(T &&system) {
+  return into_system_descriptors<std::remove_cvref_t<T>>{}(FWD(system));
+}
+
+}  // namespace nova
 
 template <>
 struct std::hash<nova::Label> {

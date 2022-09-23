@@ -21,10 +21,12 @@ class system_builder : public builder_base<system_builder> {
   friend struct into_system_descriptors<system_builder>;
 
  public:
-  template <concepts::system_like T>
+  template <concepts::system T>
   constexpr system_builder(system_tag_t, T&& system)
       : system_{detail::create_system(FWD(system))},
-        access_(detail::get_system_access<T>()) {}
+        access_(detail::get_system_access<T>()) {
+    this->labels_.push_back(to_label(system_));
+  }
 };
 
 template <>
@@ -42,7 +44,7 @@ struct into_system_descriptors<system_builder> {
   }
 };
 
-template <concepts::system_like TSystem>
+template <concepts::system TSystem>
 constexpr auto system(TSystem&& system) {
   return system_builder{system_tag_t{}, FWD(system)};
 }
@@ -61,6 +63,13 @@ class system_set : public builder_base<system_set> {
     access_.push_back(detail::get_system_access<TSystem>());
     return *this;
   }
+
+  template <typename TSystem>
+  auto with_system(TSystem&& system) && -> auto&& {
+    systems_.push_back(detail::create_system(FWD(system)));
+    access_.push_back(detail::get_system_access<TSystem>());
+    return MOV(*this);
+  }
 };
 
 template <>
@@ -76,9 +85,11 @@ struct into_system_descriptors<system_set> {
         reserved<std::vector<SystemDescriptor>>(std::size(set.systems_));
     for (auto&& [system, access] :
          ranges::views::zip(set.systems_, set.access_) | ranges::views::move) {
+      auto labels = set.labels_;
+      labels.push_back(to_label(system));
       descriptors.push_back(SystemDescriptor{
           .system = MOV(system),
-          .labels = set.labels_,
+          .labels = MOV(labels),
           .access = MOV(access),
           .ordering = set.ordering_,
       });

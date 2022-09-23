@@ -43,7 +43,7 @@ TEST_CASE("scheduler correctly assigns systems to stages") {
   sched.add_stage("a");
   sched.add_stage("b");
 
-  auto descriptor = nova::into_descriptor([] {});
+  auto descriptor = nova::to_descriptors([] {});
   const auto system_meta = descriptor.system.meta;
 
   sched.add_system_to_stage(MOV(descriptor), "a");
@@ -56,10 +56,10 @@ TEST_CASE("scheduler correctly assigns systems to stages") {
     REQUIRE(1u == std::size(stage.systems.systems));
 
     CHECK(stage.systems.systems[0].meta.id == system_meta.id);
-    CHECK(stage.systems.systems[0].meta.name == system_meta.name);
   }
 
-  { const auto found = sched.get_stage("b");
+  {
+    const auto found = sched.get_stage("b");
     REQUIRE(found.has_value());
     const auto& [stage, _] = *found;
     CHECK(std::empty(stage.systems.systems));
@@ -68,5 +68,4 @@ TEST_CASE("scheduler correctly assigns systems to stages") {
 
   CHECK(2u == sched.stage_count());
   CHECK(1u == sched.system_count());
-    
 }
