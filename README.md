@@ -11,7 +11,31 @@
 - **world**: An aggregation of **resources** and the **registry**.
 - **stage**: A collection of systems that can possibly be run in parallel.
 - **scheduler**: The collection of stages that are run in order.
+- **label**: An identifier used for ordering and lookup.
 - **bundle**: A logical collection of components. It is **NOT** itself a component.
+
+### **Labels**
+- A `label` is used as an identifier for ordering systems and stages.
+- They can be constructed from multiple types including:
+  - Empty structs
+  - String-like things
+  - Systems
+
+```cpp
+struct MyLabel {};
+
+auto system1 = [](nova::World&) {};
+auto system2 = [](nova::World&) {};
+
+app.add_system(nova::system(system1)
+  // string-like things
+  .label("a")
+  .label(std::string{"string"})
+  // empty structs
+  .after<MyLabel>() // .after(MyLabel{}) <-- also valid syntax for empty structs
+  // other systems
+  .before(system2));
+```
 
 ### **Stages**
 - A stage is nothing other than a collection of systems.
@@ -110,6 +134,21 @@ app.add_system(system(system_a).label("a"));
 // We are ordering this systems *after* 'a'
 // This means it will run *after* system 'a' completes.
 app.add_system(system(system_b).after("a"));
+```
+
+### **SystemSet**
+- A `system_set` is merely a way to assign similar labels/criteria to multiple systems.
+```cpp
+// instead of (note how both systems have the exact same labels/ordering)
+app.add_system(nova::system(system1).label("a").after("b"))
+   .add_system(nova::system(system2).label("a").after("b"));
+
+// Use a system_set :)
+app.add_system(nova::system_set()
+                .with_system(system1)
+                .with_system(system2)
+                .label("a")
+                .after("b"));
 ```
 
 ### A note on `const`-ness.
